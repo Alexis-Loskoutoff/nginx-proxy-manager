@@ -9,8 +9,7 @@ ENV SUPPRESS_NO_CONFIG_WARNING=1 \
 	S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0 \
 	S6_FIX_ATTRS_HIDDEN=1 \
 	S6_KILL_FINISH_MAXTIME=10000 \
-	S6_VERBOSITY=2 \
-	NODE_OPTIONS="--openssl-legacy-provider"
+	S6_VERBOSITY=2
 
 RUN echo "fs.file-max = 65535" > /etc/sysctl.conf \
 	&& apt-get update \
