@@ -108,7 +108,7 @@ const internalNginx = {
 	 */
 	test: () => {
 		debug(logger, "Testing Nginx configuration");
-		return utils.execFile("/usr/sbin/nginx", ["-t", "-g", "error_log off;"]);
+		return utils.execFile("/usr/sbin/nginx", ["-t", "-g", "error_log /dev/null;"]);
 	},
 
 	/**
