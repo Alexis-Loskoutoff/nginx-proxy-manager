@@ -1,0 +1,17 @@
+#!/command/with-contenv bash
+# shellcheck shell=bash
+
+# Hardened copy of the upstream run script. The container already runs as the
+# unprivileged user, so there is no s6-setuidgid (it needs CAP_SETGID), and no
+# restart loop either: s6 restarts the service when node exits.
+
+set -e
+
+. /usr/bin/common.sh
+
+cd /app || exit 1
+
+log_info 'Starting backend ...'
+
+export HOME="$NPMHOME"
+exec node --abort_on_uncaught_exception --max_old_space_size=250 index.js

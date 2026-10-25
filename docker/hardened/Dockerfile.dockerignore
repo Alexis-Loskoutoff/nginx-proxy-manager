@@ -1,0 +1,11 @@
+# Build context of docker/hardened/Dockerfile: only what the image uses
+*
+!backend/
+!frontend/
+!docker/rootfs/
+!docker/hardened/
+
+**/node_modules
+frontend/dist
+backend/config/production.json
+docker/hardened/scripts/

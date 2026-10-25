@@ -1,0 +1,5 @@
+# Extra plugins for the Cypress CI image only (FullCertProvision uses PowerDNS).
+# The constraint keeps every shared package at the production version.
+-r requirements.in
+-c requirements.txt
+certbot-dns-powerdns==0.2.1
