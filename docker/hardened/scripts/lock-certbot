@@ -1,0 +1,42 @@
+#!/bin/bash -e
+
+# Regenerates the hashed certbot locks in docker/hardened/certbot/ with the
+# same Python as the hardened image (the nginx base image, Debian trixie).
+# Run it after changing a requirements*.in file or to pick up new releases.
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$DIR/../../../scripts/.common.sh"
+
+CERTBOT_DIR="$(cd "$DIR/../certbot" && pwd)"
+PIP_TOOLS_VERSION=7.6.2
+
+# Same base image as the certbot stage, read from the Dockerfile
+NGINX_IMAGE="$(sed -n 's/^ARG NGINX_IMAGE=//p' "$DIR/../Dockerfile")"
+if [ "$NGINX_IMAGE" = "" ]; then
+	echo -e "${RED}❯ Could not read NGINX_IMAGE from the Dockerfile${RESET}"
+	exit 1
+fi
+
+echo -e "${BLUE}❯ ${CYAN}Locking certbot requirements with ${YELLOW}${NGINX_IMAGE}${RESET}"
+
+docker run --rm \
+	-v "${CERTBOT_DIR}:/work" \
+	-w /work \
+	-e DEBIAN_FRONTEND=noninteractive \
+	-e HOST_UID="$(id -u)" \
+	-e HOST_GID="$(id -g)" \
+	-e PIP_TOOLS_VERSION="${PIP_TOOLS_VERSION}" \
+	"${NGINX_IMAGE}" \
+	bash -euo pipefail -c '
+		apt-get update -qq
+		apt-get install -y -qq --no-install-recommends python3-venv > /dev/null
+		python3 -m venv /tmp/venv
+		/tmp/venv/bin/pip install -q --disable-pip-version-check "pip-tools==${PIP_TOOLS_VERSION}"
+		for name in requirements requirements-ci; do
+			/tmp/venv/bin/pip-compile --quiet --upgrade --generate-hashes --allow-unsafe --strip-extras \
+				--no-emit-index-url --output-file "${name}.txt" "${name}.in"
+		done
+		chown "${HOST_UID}:${HOST_GID}" requirements*.txt
+	'
+
+echo -e "${BLUE}❯ ${GREEN}Locks written to ${CERTBOT_DIR}${RESET}"

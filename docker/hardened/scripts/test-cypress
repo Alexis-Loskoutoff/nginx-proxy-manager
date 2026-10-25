@@ -1,0 +1,41 @@
+#!/bin/bash -e
+
+# Runs the full upstream Cypress suite (sqlite stack) against the hardened
+# "ci" image, through scripts/ci/fulltest-cypress.
+# Usage: docker/hardened/scripts/test-cypress [--keep]
+#   --keep  leave the stack running afterwards, to look at it
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$DIR/../../../scripts/.common.sh"
+
+cd "${DIR}/../../.." || exit 1
+
+# The image name scripts/ci/fulltest-cypress expects:
+# ${IMAGE}:${BRANCH_LOWER}-ci-${BUILD_NUMBER}, the "ci" tag in scripts/build
+export IMAGE=npm-hardened
+export BRANCH_LOWER=hardened
+export BUILD_NUMBER=local
+export COMPOSE_PROJECT_NAME=npm_hardened_fulltest
+export COMPOSE_FILE="docker/docker-compose.ci.yml:docker/docker-compose.ci.sqlite.yml:docker/hardened/docker-compose.ci.yml"
+
+"$DIR/build" ci
+
+rc=0
+bash scripts/ci/fulltest-cypress sqlite || rc=$?
+
+# fulltest-cypress does not fail when tests fail, check cypress itself
+if [ "$rc" = 0 ]; then
+	rc="$(docker inspect --format '{{.State.ExitCode}}' "$(docker compose ps --all -q cypress)")"
+fi
+
+if [ "${1:-}" != "--keep" ]; then
+	echo -e "${BLUE}❯ ${CYAN}Cleaning up containers ...${RESET}"
+	docker compose down --remove-orphans --volumes -t 30
+fi
+
+if [ "$rc" = 0 ]; then
+	echo -e "${BLUE}❯ ${GREEN}Cypress suite passed, results in test/results${RESET}"
+else
+	echo -e "${RED}❯ Cypress suite failed (exit ${rc}), results in test/results${RESET}"
+fi
+exit "$rc"
