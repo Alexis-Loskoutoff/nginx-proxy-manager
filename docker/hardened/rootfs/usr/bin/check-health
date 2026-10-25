@@ -1,0 +1,15 @@
+#!/usr/local/bin/node
+
+// Hardened copy of the upstream check-health, in Node so that the image does
+// not need curl and jq.
+
+const port = process.env.NPM_ADMIN_PORT || 81;
+
+fetch(`http://127.0.0.1:${port}/api/`, { signal: AbortSignal.timeout(8000) })
+	.then((res) => res.json())
+	.then((body) => body.status === "OK")
+	.catch(() => false)
+	.then((ok) => {
+		console.log(ok ? "OK" : "NOT OK");
+		process.exit(ok ? 0 : 1);
+	});

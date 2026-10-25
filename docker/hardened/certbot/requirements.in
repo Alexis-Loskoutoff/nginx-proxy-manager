@@ -1,0 +1,8 @@
+# Certbot and the DNS plugins baked into the hardened image.
+# The backend cannot install plugins at runtime (the venv is read-only), so
+# every provider in use must be listed here with a version that satisfies
+# backend/certbot/dns-plugins.json. Lock with docker/hardened/scripts/lock-certbot.
+certbot
+certbot-dns-infomaniak==0.3.3
+# pip itself: the backend runs it at startup (a no-op once plugins are baked in)
+pip
