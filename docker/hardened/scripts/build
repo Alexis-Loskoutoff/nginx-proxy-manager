@@ -1,0 +1,53 @@
+#!/bin/bash -e
+
+# Builds the hardened image into the local docker image store.
+# Usage: docker/hardened/scripts/build [final|ci] [extra docker build args...]
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$DIR/../../../scripts/.common.sh"
+
+cd "${DIR}/../../.." || exit 1
+
+TARGET="${1:-final}"
+shift || true
+
+IMAGE="${IMAGE:-ghcr.io/alexis-loskoutoff/nginx-proxy-manager}"
+BUILD_VERSION="${BUILD_VERSION:-$(cat .version)}"
+BUILD_COMMIT="${BUILD_COMMIT:-$(git log -n 1 --format=%h)}"
+BUILD_DATE="${BUILD_DATE:-$(date '+%Y-%m-%d %T %Z')}"
+
+case "$TARGET" in
+	final)
+		TAGS=(-t "${IMAGE}:${BUILD_VERSION}-hardened-${BUILD_COMMIT}" -t "${IMAGE}:hardened")
+		;;
+	ci)
+		# Local only: trusts the public test CA
+		TAGS=(-t "npm-hardened:hardened-ci-local")
+		;;
+	*)
+		echo -e "${RED}❯ Unknown target ${TARGET}, use final or ci${RESET}"
+		exit 1
+		;;
+esac
+
+if [ -n "$(git status --porcelain)" ]; then
+	echo -e "${YELLOW}❯ WARNING: the working tree has uncommitted changes, ${BUILD_COMMIT} does not describe this build${RESET}"
+fi
+
+echo -e "${BLUE}❯ ${CYAN}Building hardened ${YELLOW}${TARGET}${CYAN} image ${YELLOW}${BUILD_VERSION} (${BUILD_COMMIT})${RESET}"
+
+# --load puts the image in the local store with any buildx builder
+docker build \
+	-f docker/hardened/Dockerfile \
+	--target "$TARGET" \
+	--platform linux/amd64 \
+	--build-arg BUILD_VERSION="$BUILD_VERSION" \
+	--build-arg BUILD_COMMIT="$BUILD_COMMIT" \
+	--build-arg BUILD_DATE="$BUILD_DATE" \
+	"${TAGS[@]}" \
+	--load \
+	--progress plain \
+	"$@" \
+	.
+
+echo -e "${BLUE}❯ ${GREEN}Build complete${RESET}"

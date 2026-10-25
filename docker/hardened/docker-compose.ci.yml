@@ -1,0 +1,16 @@
+# Runs the upstream Cypress suite against the hardened "ci" image, with the
+# same restrictions as in production. Used by docker/hardened/scripts/test-cypress
+# on top of docker/docker-compose.ci.yml and docker/docker-compose.ci.sqlite.yml.
+services:
+  fullstack:
+    user: "1500:1500"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /run:exec,uid=1500,gid=1500,mode=0755
+      - /tmp:mode=1777
+      - /var/cache/nginx:uid=1500,gid=1500
+      - /var/lib/nginx:uid=1500,gid=1500
