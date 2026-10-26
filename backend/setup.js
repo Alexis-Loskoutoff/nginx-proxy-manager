@@ -1,4 +1,5 @@
 import { installPlugins } from "./lib/certbot.js";
+import { configGet, isSqlite } from "./lib/config.js";
 import utils from "./lib/utils.js";
 import { setup as logger } from "./logger.js";
 import authModel from "./models/auth.js";
@@ -128,6 +129,30 @@ const setupCertbotPlugins = async () => {
 };
 
 /**
+ * Makes the files that hold secrets readable by their owner only. The SQLite
+ * database holds DNS provider credentials, access list passwords and imported
+ * private keys, and custom_ssl holds those keys again. Both used to be created
+ * world-readable, so this runs on every start to fix existing installs too.
+ * SQLite gives its journal files the mode of the database file.
+ *
+ * @returns {Promise}
+ */
+const setupFilePermissions = async () => {
+	const paths = [["/data/custom_ssl", 0o700]];
+	if (isSqlite()) {
+		paths.push([configGet("database").knex.connection.filename, 0o600]);
+	}
+
+	for (const [path, mode] of paths) {
+		try {
+			await fs.chmod(path, mode);
+		} catch (err) {
+			logger.warn(`Could not restrict the permissions of ${path}: ${err.message}`);
+		}
+	}
+};
+
+/**
  * Starts a timer to call run the logrotation binary every two days
  * @returns {Promise}
  */
@@ -149,4 +174,9 @@ const setupLogrotation = () => {
 	return runLogrotate();
 };
 
-export default () => setupDefaultUser().then(setupDefaultSettings).then(setupCertbotPlugins).then(setupLogrotation);
+export default () =>
+	setupFilePermissions()
+		.then(setupDefaultUser)
+		.then(setupDefaultSettings)
+		.then(setupCertbotPlugins)
+		.then(setupLogrotation);
