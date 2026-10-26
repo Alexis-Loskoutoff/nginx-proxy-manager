@@ -16,6 +16,13 @@ for dir in /data /etc/letsencrypt; do
 	if [ ! -w "$dir" ]; then
 		log_fatal "$dir is not writable by uid $(id -u), give it to $(id -u):$(id -g) on the host."
 	fi
+	# The database (DNS credentials), imported private keys and access list
+	# passwords are created world-readable by the backend. Closing the parent
+	# directory covers existing and future files alike. A umask would not do:
+	# `nginx -t`, run by the backend, creates the log files of new hosts too.
+	if ! chmod 0700 "$dir" 2>/dev/null; then
+		log_error "WARNING: could not restrict $dir to its owner, give it to $(id -u):$(id -g) on the host."
+	fi
 done
 
 for dir in /run /tmp /var/cache/nginx /var/lib/nginx; do

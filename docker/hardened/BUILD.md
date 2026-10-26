@@ -153,6 +153,11 @@ volumes:
   Another uid works if the user owns every writable path: build with
   `docker/hardened/scripts/build final --build-arg NPM_UID=… --build-arg NPM_GID=…`,
   or change the `uid`/`gid` of the tmpfs and make the volumes yours.
+- **Permissions.** On every start, `/data` and `/etc/letsencrypt` are set to
+  `0700`: the database (DNS credentials included) and imported private keys
+  are created world-readable inside them. Anything on the host that reads the
+  nginx logs must therefore get them from a separate mount on `/data/logs`,
+  not through `data/logs`.
 - **Capabilities.** None are needed. Docker lets unprivileged processes bind
   ports below 1024 inside the container (`net.ipv4.ip_unprivileged_port_start=0`).
 - **`/run`.** s6-overlay refuses a `/run` that root owns and anyone can write,
