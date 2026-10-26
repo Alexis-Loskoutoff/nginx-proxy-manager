@@ -127,7 +127,7 @@ RUN node -e ' \
 		fs.writeFileSync("package.json", JSON.stringify(pkg, null, "\t")); \
 	' \
 	&& cp package.json /tmp/package.json \
-	&& yarn install --production --pure-lockfile --non-interactive \
+	&& yarn install --production --frozen-lockfile --non-interactive \
 	&& yarn cache clean
 
 COPY backend/ ./
