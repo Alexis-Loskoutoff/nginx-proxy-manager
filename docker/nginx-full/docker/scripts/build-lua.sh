@@ -9,7 +9,7 @@ RESET='\E[0m'
 echo -e "${BLUE}❯ ${CYAN}Building Lua ${YELLOW}${LUA_VERSION}...${RESET}"
 
 cd /tmp
-wget "http://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz"
+wget "https://www.lua.org/ftp/lua-${LUA_VERSION}.tar.gz"
 tar -xzf "lua-${LUA_VERSION}.tar.gz"
 mv "/tmp/lua-${LUA_VERSION}" /tmp/lua
 cd /tmp/lua
@@ -24,7 +24,7 @@ echo -e "${BLUE}❯ ${GREEN}Lua build completed${RESET}"
 echo -e "${BLUE}❯ ${CYAN}Building Luarocks ${YELLOW}${LUAROCKS_VERSION}...${RESET}"
 
 cd /tmp
-wget "http://luarocks.github.io/luarocks/releases/luarocks-${LUAROCKS_VERSION}.tar.gz"
+wget "https://luarocks.github.io/luarocks/releases/luarocks-${LUAROCKS_VERSION}.tar.gz"
 tar -xzf "luarocks-${LUAROCKS_VERSION}.tar.gz"
 mv "/tmp/luarocks-${LUAROCKS_VERSION}" /tmp/luarocks
 cd /tmp/luarocks

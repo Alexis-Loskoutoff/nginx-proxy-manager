@@ -7,8 +7,10 @@ at commit `46259d0da64a25de676fc52ed1cd7142fe05769a`, which builds the
 update, and the nginx security fixes that come with it, before the
 published image is updated.
 
-The only change from that commit is `OPENRESTY_VERSION` in
-`docker/docker-bake.hcl`, from `1.31.1.1` to `1.31.8.1`. To check it:
+Changes from that commit are `OPENRESTY_VERSION` in
+`docker/docker-bake.hcl`, from `1.31.1.1` to `1.31.8.1`, and HTTPS URLs
+for the Lua and LuaRocks downloads in `docker/scripts/build-lua.sh`.
+To check them:
 
 ```bash
 git clone https://github.com/NginxProxyManager/docker-nginx-full
