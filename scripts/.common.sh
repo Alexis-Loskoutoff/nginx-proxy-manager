@@ -16,6 +16,11 @@ COMPOSE_FILE="docker/docker-compose.dev.yml"
 
 export COMPOSE_FILE COMPOSE_PROJECT_NAME
 
+# Base image pushed by scripts/nginx-full, see docker/nginx-full/README.md
+NGINX_FULL_REPO="${NGINX_FULL_REPO:-docker.io/nginxproxymanager/nginx-proxy-manager-dev}"
+NGINX_FULL_TAG="nginx-full-${BRANCH_LOWER:-unknown}-${BUILD_NUMBER:-0000}"
+NGINX_FULL_IMAGE="${NGINX_FULL_REPO}:${NGINX_FULL_TAG}-certbot-node"
+
 # $1: container_name
 get_container_ip () {
 	local container_name=$1

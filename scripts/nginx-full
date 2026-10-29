@@ -1,0 +1,31 @@
+#!/bin/bash -e
+
+# Builds the certbot-node image from docker/nginx-full for amd64 and arm64,
+# and pushes it as NGINX_FULL_IMAGE (see .common.sh).
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$DIR/.common.sh"
+
+cd "${DIR}/../docker/nginx-full" || exit 1
+
+# Variables of docker/nginx-full/docker/docker-bake.hcl
+DOCKER_IMAGE="${NGINX_FULL_REPO}"
+TAG_PREFIX="${NGINX_FULL_TAG}-"
+BASE_TAG="${NGINX_FULL_TAG}-base"
+export DOCKER_IMAGE TAG_PREFIX BASE_TAG
+# The versions must come from the bake file
+unset OPENRESTY_VERSION LUA_VERSION LUAROCKS_VERSION
+
+echo -e "${BLUE}❯ ${CYAN}Building base image: ${YELLOW}${NGINX_FULL_IMAGE}${RESET}"
+
+BUILDER="${BUILDX_NAME:-npm}_nginxfull"
+docker buildx create --name "${BUILDER}"
+trap 'docker buildx rm "${BUILDER}"' EXIT
+docker buildx bake \
+	--builder "${BUILDER}" \
+	--file docker/docker-bake.hcl \
+	--progress plain \
+	--push \
+	certbot-node
+
+echo -e "${BLUE}❯ ${GREEN}Base image build Complete${RESET}"

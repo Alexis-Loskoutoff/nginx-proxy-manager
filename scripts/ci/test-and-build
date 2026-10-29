@@ -15,12 +15,16 @@ docker run --rm \
 	sh -c 'yarn install && yarn lint . && rm -rf node_modules'
 echo -e "${BLUE}❯ ${GREEN}Testing Complete${RESET}"
 
+# Base image, also used by scripts/buildx
+"$DIR/../nginx-full"
+
 # Build
 echo -e "${BLUE}❯ ${CYAN}Building ...${RESET}"
 docker build --pull --no-cache --compress \
 	-t "${IMAGE:-nginx-proxy-manager}:${BRANCH_LOWER:-unknown}-ci-${BUILD_NUMBER:-0000}" \
 	-f docker/Dockerfile \
 	--progress=plain \
+	--build-arg BASE_IMAGE="${NGINX_FULL_IMAGE}" \
 	--build-arg TARGETPLATFORM=linux/amd64 \
 	--build-arg BUILDPLATFORM=linux/amd64 \
 	--build-arg BUILD_VERSION="${BUILD_VERSION:-unknown}" \
