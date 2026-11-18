@@ -2,7 +2,7 @@
 
 # Hardened Nginx Proxy Manager image, self-contained (no nginx-full base image):
 # - official nginx stable image instead of OpenResty, plus headers-more
-# - Node 24, SQLite only, no compiler, package manager or curl at runtime
+# - Node 26, SQLite only, no compiler, package manager or curl at runtime
 # - certbot and its DNS plugins locked with hashes and read-only at runtime
 # - runs as an unprivileged user from the first process, supports a
 #   read-only root filesystem and no capabilities at all
@@ -13,8 +13,7 @@
 # Base images are pinned by digest, the tag is only there for humans.
 # NGINX_IMAGE must stay on the version that PKG_OSS_COMMIT is tagged for.
 ARG NGINX_IMAGE=nginx:1.30.6-trixie@sha256:a7675fcee220f59b4a99f7098c06a0d5d999c2c0ee37c0211efb780536e5cb20
-ARG NODE_IMAGE=node:24.22.1-trixie-slim@sha256:43b9ba1142b8dcf33fa8f922ca1be85714adc444e0586c7cf7726daaeabc1bea
-ARG NODE_BUILD_IMAGE=node:24.22.1-trixie@sha256:016f604a11c4c725f0a4c62e29ff11adab153d297bf97046c9bf2ddb9f1011d3
+ARG NODE_BUILD_IMAGE=node:26.13.1-trixie@sha256:e18c3ccdf7d71619990b0e85639f506e2028a95410999cab24cc373cbd10e0ac
 ARG TESTCA_IMAGE=nginxproxymanager/testca@sha256:3e23c78c64789b8e95126589dd502127e57bbad6091a5a88a67ffb87a16f6b6a
 
 # Owner of the writable paths inside the image. The container should run
@@ -97,6 +96,22 @@ RUN /opt/certbot/bin/pip install --require-hashes --no-deps -r /tmp/requirements
 	&& /opt/certbot/bin/python /tmp/check-plugins.py /tmp/dns-plugins.json infomaniak powerdns
 
 #############
+# Yarn classic for the build stages: Node 26 images no longer ship it.
+# Checked against the npm registry tarball (same integrity as its sha512).
+#############
+
+FROM --platform=$BUILDPLATFORM ${NODE_BUILD_IMAGE} AS yarn
+
+ARG YARN_VERSION=1.22.22
+
+ADD --checksum=sha256:c17d3797fb9a9115bf375e31bfd30058cac6bc9c3b8807a3d8cb2094794b51ca \
+	https://registry.npmjs.org/yarn/-/yarn-${YARN_VERSION}.tgz /tmp/yarn.tgz
+
+RUN mkdir /opt/yarn \
+	&& tar -C /opt/yarn --strip-components=1 -xzf /tmp/yarn.tgz \
+	&& /opt/yarn/bin/yarn --version
+
+#############
 # Backend: production dependencies only, native modules compiled here
 #############
 
@@ -106,9 +121,12 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG BUILD_VERSION
 
+COPY --from=yarn /opt/yarn /opt/yarn
+
 # Native modules are built from the lockfile-checked sources against the
 # headers of this Node, so no prebuilt binary is downloaded
-ENV npm_config_build_from_source=true \
+ENV PATH="/opt/yarn/bin:${PATH}" \
+	npm_config_build_from_source=true \
 	npm_config_nodedir=/usr/local
 
 WORKDIR /app
@@ -149,6 +167,9 @@ RUN cp /tmp/package.json package.json \
 
 FROM --platform=$BUILDPLATFORM ${NODE_BUILD_IMAGE} AS frontend
 
+COPY --from=yarn /opt/yarn /opt/yarn
+ENV PATH="/opt/yarn/bin:${PATH}"
+
 WORKDIR /app/frontend
 COPY frontend/package.json frontend/yarn.lock ./
 RUN yarn install --frozen-lockfile --non-interactive \
@@ -181,8 +202,6 @@ RUN if [ "${TARGETARCH}" != "amd64" ]; then \
 	&& tar -C /s6 -Jxpf /tmp/s6-overlay-noarch.tar.xz \
 	&& tar -C /s6 -Jxpf /tmp/s6-overlay-x86_64.tar.xz
 
-FROM ${NODE_IMAGE} AS node
-
 FROM ${TESTCA_IMAGE} AS testca
 
 #############
@@ -210,6 +229,7 @@ RUN --mount=type=bind,from=nginx-modules,source=/packages,target=/tmp/packages \
 		nginx-module-njs \
 		nginx-module-xslt \
 	&& apt-get install -y --no-install-recommends \
+		libatomic1 \
 		libstdc++6 \
 		logrotate \
 		openssl \
@@ -225,7 +245,8 @@ RUN groupadd --gid "${NPM_GID}" npm \
 		--shell /usr/sbin/nologin npm
 
 COPY --from=s6 /s6/ /
-COPY --from=node /usr/local/bin/node /usr/local/bin/node
+# Use the same Node binary that compiled the backend's native modules.
+COPY --from=backend /usr/local/bin/node /usr/local/bin/node
 COPY --from=backend /app /app
 COPY --from=frontend /app/frontend/dist /app/frontend
 COPY docker/rootfs /
