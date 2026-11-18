@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.28.0@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 
 # Hardened Nginx Proxy Manager image, self-contained (no nginx-full base image):
-# - official nginx stable image instead of OpenResty, plus headers-more
+# - official nginx mainline image instead of OpenResty, plus headers-more
 # - Node 26, SQLite only, no compiler, package manager or curl at runtime
 # - certbot and its DNS plugins locked with hashes and read-only at runtime
 # - runs as an unprivileged user from the first process, supports a
@@ -12,7 +12,7 @@
 
 # Base images are pinned by digest, the tag is only there for humans.
 # NGINX_IMAGE must stay on the version that PKG_OSS_COMMIT is tagged for.
-ARG NGINX_IMAGE=nginx:1.30.6-trixie@sha256:a7675fcee220f59b4a99f7098c06a0d5d999c2c0ee37c0211efb780536e5cb20
+ARG NGINX_IMAGE=nginx:1.31.9-trixie@sha256:08f354a3b44c422021a5c0f5efb3e27f8f90236b5447d3bac4053f5f50ab6760
 ARG NODE_BUILD_IMAGE=node:26.13.1-trixie@sha256:e18c3ccdf7d71619990b0e85639f506e2028a95410999cab24cc373cbd10e0ac
 ARG TESTCA_IMAGE=nginxproxymanager/testca@sha256:3e23c78c64789b8e95126589dd502127e57bbad6091a5a88a67ffb87a16f6b6a
 
@@ -31,8 +31,8 @@ FROM ${NGINX_IMAGE} AS nginx-modules
 
 SHELL ["/bin/bash", "-exo", "pipefail", "-c"]
 
-# Tag 1.30.6-1 of https://github.com/nginx/pkg-oss
-ARG PKG_OSS_COMMIT=3e9e3b9f85308c0bb7b1cf849c87d1f7df98dfc3
+# Tag 1.31.9-1 of https://github.com/nginx/pkg-oss
+ARG PKG_OSS_COMMIT=fffcac06856eb0cbe12f8f9e2513bb1b062ee6ac
 # Same pinned helper as nginx's docker-nginx/modules/Dockerfile
 ARG XSLSCRIPT_COMMIT=9204424259c343ca08a18a78915f40f28025e093
 ARG XSLSCRIPT_SHA512=f7194c5198daeab9b3b0c3aebf006922c7df1d345d454bd8474489ff2eb6b4bf8e2ffe442489a45d1aab80da6ecebe0097759a1e12cc26b5f0613d05b7c09ffa
@@ -345,7 +345,7 @@ ENTRYPOINT [ "/init" ]
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s CMD [ "/usr/bin/check-health" ]
 
 LABEL org.opencontainers.image.title="nginx-proxy-manager (hardened)" \
-	org.opencontainers.image.description="Nginx Proxy Manager on official nginx stable, unprivileged and read-only" \
+	org.opencontainers.image.description="Nginx Proxy Manager on official nginx mainline, unprivileged and read-only" \
 	org.opencontainers.image.licenses="MIT" \
 	org.opencontainers.image.source="https://github.com/Alexis-Loskoutoff/nginx-proxy-manager" \
 	org.opencontainers.image.version="${BUILD_VERSION}" \

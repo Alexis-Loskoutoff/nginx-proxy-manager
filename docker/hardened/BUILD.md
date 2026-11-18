@@ -7,8 +7,8 @@ is upstream and only changes the image around it. Everything lives in
 
 | | Upstream image | Hardened image |
 |---|---|---|
-| Base | `nginxproxymanager/nginx-full:certbot-node` (built in another repo) | official `nginx` stable image, built here |
-| Web server | OpenResty (nginx + Lua) | nginx stable + `headers-more` module |
+| Base | `nginxproxymanager/nginx-full:certbot-node` (built in another repo) | official `nginx` mainline image, built here |
+| Web server | OpenResty (nginx + Lua) | nginx mainline + `headers-more` module |
 | Node.js | 26 (nodesource) | 26 (official image binary) |
 | Databases | SQLite, MySQL/MariaDB, PostgreSQL | SQLite only |
 | Certbot plugins | any, `pip install`ed at runtime | baked in from a hashed lock, read-only |
@@ -202,7 +202,7 @@ Everything the build downloads is pinned and checked:
 | What | Where | How to update |
 |---|---|---|
 | Dockerfile syntax | first line of `Dockerfile` | tag + digest from `docker buildx imagetools inspect docker/dockerfile:<version>` |
-| nginx | `NGINX_IMAGE` | stable tag + digest. Then set `PKG_OSS_COMMIT` to the commit of the [pkg-oss](https://github.com/nginx/pkg-oss/tags) tag `<nginx version>-1` (the build checks they match) |
+| nginx | `NGINX_IMAGE` | mainline tag (odd minor, e.g. 1.31.x) + digest. Then set `PKG_OSS_COMMIT` to the commit of the [pkg-oss](https://github.com/nginx/pkg-oss/tags) tag `<nginx version>-1` (the build checks they match) |
 | headers-more | through `PKG_OSS_COMMIT` | pkg-oss pins the module and its SHA512 |
 | Node.js | `NODE_BUILD_IMAGE` | version + digest; the runtime binary is copied from the backend build stage |
 | s6-overlay | `S6_OVERLAY_VERSION` + the two `ADD --checksum` | checksums from the release's `.sha256` files |
